@@ -36,10 +36,29 @@
 
 // console.log("Hello");
 
+/**
+ */
+// prettier-ignore
+function AutoBind(target: any, methodName: string, descriptor: PropertyDescriptor){
+  console.log(descriptor)
+  const originalMethod = descriptor.value
+  const adjDescriptor: PropertyDescriptor = {
+    configurable: true,
+    get() {
+      const boundFn = originalMethod.bind(this)
+      return boundFn
+    }
+  }
+   return adjDescriptor
+}
+
 class ProjectInput {
   templateElement: HTMLTemplateElement;
   hostElement: HTMLDivElement;
   element: HTMLFormElement;
+  titleInputElement: HTMLInputElement;
+  descriptionInputElement: HTMLInputElement;
+  peopleInputElement: HTMLInputElement;
 
   constructor() {
     // prettier-ignore
@@ -49,11 +68,28 @@ class ProjectInput {
     // prettier-ignore
     const importedNode = document.importNode(this.templateElement.content, true);
     this.element = <HTMLFormElement>importedNode.firstElementChild;
+    this.element.id = "user-input";
+
+    this.titleInputElement = this.element.querySelector("#title")!;
+    this.descriptionInputElement = this.element.querySelector("description")!;
+    this.peopleInputElement = this.element.querySelector("people")!;
+
+    this.configure();
     this.attach();
+  }
+
+  @AutoBind
+  private submitHandler(event: Event) {
+    event.preventDefault();
+    console.log(this.titleInputElement.value);
   }
 
   private attach() {
     this.hostElement.insertAdjacentElement("afterbegin", this.element);
+  }
+
+  private configure() {
+    this.element.addEventListener("submit", this.submitHandler);
   }
 }
 
