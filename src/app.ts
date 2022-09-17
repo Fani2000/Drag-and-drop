@@ -53,6 +53,45 @@ function AutoBind(target: any, methodName: string, descriptor: PropertyDescripto
    return adjDescriptor
 }
 
+interface Validatable {
+  value: string | number;
+  required?: boolean;
+  minLength?: number;
+  maxLength?: number;
+  min?: number;
+  max?: number;
+}
+
+const validate = (validatableInput: Validatable): boolean => {
+  let isValid = true;
+
+  if (validatableInput.required) {
+    isValid = isValid && validatableInput.value.toString().trim().length !== 0;
+  }
+
+  // prettier-ignore
+  if(validatableInput.minLength != null && typeof validatableInput.value === 'string'){
+    isValid = isValid && validatableInput.value.trim().length > validatableInput.minLength
+  }
+
+  // prettier-ignore
+  if(validatableInput.maxLength!= null && typeof validatableInput.value === 'string'){
+    isValid = isValid && validatableInput.value.trim().length < validatableInput.maxLength
+  }
+
+  // prettier-ignore
+  if(validatableInput.min!= null && typeof validatableInput.value === 'number'){
+    isValid = isValid && validatableInput.value > validatableInput.min
+  }
+
+  // prettier-ignore
+  if(validatableInput.max!= null && typeof validatableInput.value === 'number'){
+    isValid = isValid && validatableInput.value < validatableInput.max
+  }
+
+  return isValid;
+};
+
 class ProjectInput {
   templateElement: HTMLTemplateElement;
   hostElement: HTMLDivElement;
@@ -91,7 +130,8 @@ class ProjectInput {
     const enteredPeople = this.peopleInputElement.value;
 
     // prettier-ignore
-    if(enteredTitle.trim().length === 0 || enteredDescription.trim().length === 0 || enteredPeople.trim().length === 0){
+    // if(enteredTitle.trim().length === 0 || enteredDescription.trim().length === 0 || enteredPeople.trim().length === 0){
+    if(!validate({value: enteredTitle, required: true}) || !validate({value: enteredDescription,required: true,minLength: 5}) || !validate({value: enteredPeople, required: true, min: 1, max: 5})){
       alert('Invalid Input, please try again!')
       return;
     }
