@@ -36,6 +36,83 @@ const validate = (validatableInput) => {
     }
     return isValid;
 };
+var ProjectStatus;
+(function (ProjectStatus) {
+    ProjectStatus["Active"] = "active";
+    ProjectStatus["Finished"] = "finished";
+})(ProjectStatus || (ProjectStatus = {}));
+class ProjectState {
+    constructor() {
+        this.projects = [];
+        this.listeners = [];
+    }
+    static getInstance() {
+        if (this.instance)
+            return this.instance;
+        this.instance = new ProjectState();
+        return this.instance;
+    }
+    addListener(listenerFn) {
+        this.listeners.push(listenerFn);
+    }
+    addProject(title, description, numOfPeople, status) {
+        const newProject = {
+            id: Math.random().toString(),
+            title,
+            description,
+            people: numOfPeople,
+            status,
+        };
+        this.projects.push(newProject);
+        for (const listenerFn of this.listeners) {
+            listenerFn(this.projects.slice());
+        }
+    }
+}
+const projectState = ProjectState.getInstance();
+class ProjectList {
+    constructor(type) {
+        this.type = type;
+        this.assignedProjects = [];
+        this.templateElement = document.getElementById('project-list');
+        this.hostElement = document.getElementById("app");
+        const importedNode = document.importNode(this.templateElement.content, true);
+        this.element = importedNode.firstElementChild;
+        this.element.id = `${this.type}-projects`;
+        projectState.addListener((projects) => {
+            console.log(projects);
+            const relevantProjects = projects.filter((prj) => {
+                if (this.type === "active") {
+                    return prj.status === ProjectStatus.Active;
+                }
+                return prj.status === ProjectStatus.Finished;
+            });
+            this.assignedProjects = relevantProjects;
+            this.renderProjects();
+        });
+        this.renderContent();
+        this.attach();
+    }
+    renderProjects() {
+        const listEl = document.getElementById(`${this.type}-projects-list`);
+        listEl.innerHTML = "";
+        for (const projItem of this.assignedProjects) {
+            console.log(projItem);
+            const listItem = document.createElement("li");
+            listItem.textContent = projItem.title;
+            listEl.appendChild(listItem);
+        }
+    }
+    renderContent() {
+        const listId = `${this.type}-projects-list`;
+        this.element.querySelector("ul").id = listId;
+        this.element.querySelector("h2").textContent =
+            this.type.toUpperCase() + " PROJECTS";
+    }
+    attach() {
+        this.hostElement.insertAdjacentElement("beforeend", this.element);
+    }
+}
 class ProjectInput {
     constructor() {
         this.templateElement = document.getElementById('project-input');
@@ -58,7 +135,7 @@ class ProjectInput {
         const enteredTitle = this.titleInputElement.value;
         const enteredDescription = this.descriptionInputElement.value;
         const enteredPeople = this.peopleInputElement.value;
-        if (!validate({ value: enteredTitle, required: true }) || !validate({ value: enteredDescription, required: true, minLength: 5 }) || !validate({ value: enteredPeople, required: true, min: 1, max: 5 })) {
+        if (!validate({ value: enteredTitle, required: true }) || !validate({ value: enteredDescription, required: true, minLength: 5 }) || !validate({ value: Number(enteredPeople), required: true, min: 1, max: 5 })) {
             alert('Invalid Input, please try again!');
             return;
         }
@@ -69,7 +146,7 @@ class ProjectInput {
         const userInput = this.getUserInput();
         if (Array.isArray(userInput)) {
             const [title, desc, people] = userInput;
-            console.log(title, desc, people);
+            projectState.addProject(title, desc, people, "active");
         }
         this.clearInputs();
     }
@@ -84,3 +161,5 @@ __decorate([
     AutoBind
 ], ProjectInput.prototype, "submitHandler", null);
 const app = new ProjectInput();
+const activeProjectList = new ProjectList("active");
+const FinishedProjectList = new ProjectList("finished");
